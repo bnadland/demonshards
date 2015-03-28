@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/nsf/termbox-go"
+	"math/rand"
 	"strconv"
 	"unicode/utf8"
 )
@@ -16,11 +17,10 @@ type Viking struct {
 }
 
 func NewViking(sprite string, x int, y int) *Viking {
-	spriteRune, _ := utf8.DecodeRuneInString(sprite)
 	return &Viking{
-		Sprite:     spriteRune,
-		Color:      termbox.ColorGreen,
-		Background: termbox.ColorBlack,
+		Sprite:     tile(sprite),
+		Color:      termbox.ColorBlack,
+		Background: termbox.ColorGreen,
 		X:          x,
 		Y:          y,
 	}
@@ -32,12 +32,20 @@ func render(text string, x int, y int) {
 	}
 }
 
+func tile(ch string) rune {
+	tileRune, _ := utf8.DecodeRuneInString(ch)
+	return tileRune
+}
+
 func main() {
 	err := termbox.Init()
 	if err != nil {
 		panic(err)
 	}
 	defer termbox.Close()
+
+	rows := 24
+	cols := 80
 
 	vikings := []*Viking{
 		NewViking("1", 5, 7),
@@ -55,12 +63,7 @@ func main() {
 
 	running := true
 
-	tiles := make(map[string]rune)
-
-	for _, tile := range []string{".", "#"} {
-		tileRune, _ := utf8.DecodeRuneInString(tile)
-		tiles[tile] = tileRune
-	}
+	enemies := []string{"z", "m", "s"}
 
 	selectedViking := 1
 
@@ -68,12 +71,54 @@ func main() {
 
 		render(fmt.Sprintf("[%s] Viking", strconv.Itoa(selectedViking)), 0, 0)
 
-		for x := 0; x < 80; x++ {
-			for y := 1; y < 20; y++ {
-				termbox.SetCell(x, y, tiles["."], termbox.ColorWhite, termbox.ColorBlack)
+		// floor
+		func() {
+			for x := 0; x < cols; x++ {
+				for y := 1; y < rows; y++ {
+					termbox.SetCell(x, y, tile("."), termbox.ColorWhite, termbox.ColorBlack)
+				}
 			}
-		}
+		}()
 
+		// walls
+		func() {
+			for i := 0; i < rand.Intn(rows*cols); i++ {
+				termbox.SetCell(
+					rand.Intn(cols),
+					rand.Intn(rows-1)+1,
+					tile("#"),
+					termbox.ColorWhite,
+					termbox.ColorBlack)
+			}
+
+		}()
+
+		// walls
+		func() {
+			for i := 0; i < rand.Intn(rows*cols); i++ {
+				termbox.SetCell(
+					rand.Intn(cols),
+					rand.Intn(rows-1)+1,
+					tile("t"),
+					termbox.ColorWhite,
+					termbox.ColorBlack)
+			}
+
+		}()
+
+		// enemies
+		func() {
+			for i := 0; i < rand.Intn(9); i++ {
+				termbox.SetCell(
+					rand.Intn(cols),
+					rand.Intn(rows-1)+1,
+					tile(enemies[rand.Intn(len(enemies))]),
+					termbox.ColorWhite,
+					termbox.ColorRed)
+			}
+		}()
+
+		// vikings
 		for _, viking := range vikings {
 			termbox.SetCell(viking.X, viking.Y, viking.Sprite, viking.Color, viking.Background)
 		}
