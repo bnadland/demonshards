@@ -53,8 +53,6 @@ func main() {
 		Y: vikings[0].Y,
 	}
 
-	termbox.SetCursor(cursor.X, cursor.Y)
-
 	running := true
 
 	tiles := make(map[string]rune)
