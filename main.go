@@ -27,12 +27,14 @@ func main() {
 
 	missionMap := NewMap("001")
 
-	viking := NewViking("@", missionMap.Spawn.X, missionMap.Spawn.Y)
+	viking := NewViking('@', missionMap.Spawn.X, missionMap.Spawn.Y)
+	cursor := &Point{X: viking.Position.X, Y: viking.Position.Y}
 
 	for running {
 
 		missionMap.Draw()
 		viking.Draw()
+		termbox.SetCursor(cursor.X, cursor.Y)
 
 		termbox.Flush()
 
@@ -42,24 +44,24 @@ func main() {
 				running = false
 			}
 
-			position := &Point{
-				X: viking.Position.X,
-				Y: viking.Position.Y,
-			}
 			if event.Ch == 'j' {
-				position.Y += 1
+				cursor.Y += 1
 			}
 			if event.Ch == 'k' {
-				position.Y -= 1
+				cursor.Y -= 1
 			}
 			if event.Ch == 'h' {
-				position.X -= 1
+				cursor.X -= 1
 			}
 			if event.Ch == 'l' {
-				position.X += 1
+				cursor.X += 1
 			}
-			if missionMap.IsPassable(position) == true {
-				viking.Position = position
+
+			if event.Ch == 'x' {
+				if missionMap.FindPath(viking.Position, cursor) {
+					viking.Position.X = cursor.X
+					viking.Position.Y = cursor.Y
+				}
 			}
 		}
 	}

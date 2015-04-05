@@ -13,9 +13,9 @@ func (v *Viking) Draw() {
 	termbox.SetCell(v.Position.X, v.Position.Y, v.Sprite, termbox.ColorDefault, termbox.ColorDefault)
 }
 
-func NewViking(sprite string, x int, y int) *Viking {
+func NewViking(sprite rune, x int, y int) *Viking {
 	return &Viking{
-		Sprite:   Rune(sprite),
+		Sprite:   sprite,
 		Position: &Point{X: x, Y: y},
 	}
 }
