@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"fmt"
 	"github.com/nsf/termbox-go"
 	"io/ioutil"
@@ -18,13 +19,6 @@ type Tile struct {
 type Point struct {
 	X int
 	Y int
-}
-
-func (p1 *Point) equal(p2 *Point) bool {
-	if p1.X == p2.X && p1.Y == p2.Y {
-		return true
-	}
-	return false
 }
 
 type MissionMap struct {
@@ -55,48 +49,58 @@ func (m *MissionMap) Neighbours(p Point) []Point {
 }
 
 func (m *MissionMap) FindPath(start *Point, target *Point) bool {
-	frontier := make(chan Point, m.MaxY*m.MaxX)
-	frontier <- Point{X: start.X, Y: start.Y}
+	termbox.HideCursor()
 
-	visited := make(map[int]map[int]bool)
+	frontier := list.New()
+	frontier.PushBack(Point{X: start.X, Y: start.Y})
+
+	visited := make(map[int]map[int]*Point)
 	for y := 0; y < m.MaxY; y++ {
-		visited[y] = make(map[int]bool)
-		for x := 0; x < m.MaxX; x++ {
-			visited[y][x] = false
-		}
+		visited[y] = make(map[int]*Point)
 	}
-	visited[start.Y][start.X] = true
+	visited[start.Y][start.X] = nil
 
-	for {
-		current := <-frontier
+	for frontier.Len() > 0 {
+		head := frontier.Front()
+		frontier.Remove(head)
+		current := head.Value.(Point)
+
+		if current.X == target.X && current.Y == target.Y {
+			path := []Point{Point{X: target.X, Y: target.Y}}
+			m.Draw()
+			for _, p := range path {
+				termbox.SetCell(p.X, p.Y, '.', termbox.ColorBlue, termbox.ColorBlue)
+			}
+			termbox.Flush()
+			time.Sleep(500 * time.Millisecond)
+			// get path
+			return true
+		}
 
 		m.Draw()
 
 		for _, point := range m.Neighbours(current) {
 			if m.Tiles[point.Y][point.X].IsPassable {
-				if visited[point.Y][point.X] == false {
-					frontier <- point
-					visited[point.Y][point.X] = true
+				if visited[point.Y][point.X] == nil {
+					frontier.PushBack(point)
+					visited[point.Y][point.X] = &current
 				}
 			}
 		}
 
 		for y := 0; y < m.MaxY; y++ {
 			for x := 0; x < m.MaxX; x++ {
-				if visited[y][x] == true {
-					termbox.SetCell(x, y, '.', termbox.ColorYellow, termbox.ColorYellow)
+				if visited[y][x] != nil {
+					termbox.SetCell(x, y, '.', termbox.ColorYellow|termbox.AttrBold, termbox.ColorBlack)
 				}
 			}
 		}
 
-		termbox.SetCell(current.X, current.Y, '.', termbox.ColorBlue, termbox.ColorBlue)
+		termbox.SetCell(current.X, current.Y, '.', termbox.ColorBlue|termbox.AttrBold, termbox.ColorBlack)
 		termbox.Flush()
-		time.Sleep(500 * time.Millisecond)
-
-		if current.X == target.X && current.Y == target.Y {
-			return true
-		}
+		time.Sleep(300 * time.Millisecond)
 	}
+	return false
 }
 
 func NewMap(mapName string) *MissionMap {
