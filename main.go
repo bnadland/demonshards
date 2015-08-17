@@ -1,68 +1,78 @@
 package main
 
 import (
+	"github.com/nickdavies/go-astar/astar"
 	"github.com/nsf/termbox-go"
-	"unicode/utf8"
+	"log"
+	"math/rand"
+	"os"
+	"time"
 )
 
-func Render(text string, x int, y int) {
-	for i, textRune := range text {
-		termbox.SetCell(x+i, y, textRune, termbox.ColorWhite, termbox.ColorBlack)
+func printString(col, row int, text string) {
+	for i, ch := range text {
+		termbox.SetCell(col+i, row, ch, termbox.ColorDefault, termbox.ColorDefault)
 	}
 }
 
-func Rune(ch string) rune {
-	tileRune, _ := utf8.DecodeRuneInString(ch)
-	return tileRune
+func showIntro() {
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+	printString(10, 5, "After a long demon hunt, you finally arrive back home at the Isle of Hunters")
+	printString(10, 6, "to rest for the winter...")
+	termbox.Flush()
+	termbox.PollEvent()
+}
+
+func showGrid() {
+	cols, rows := termbox.Size()
+	a := astar.NewAStar(rows, cols)
+	seed := time.Now().UnixNano()
+	r := rand.New(rand.NewSource(seed))
+
+	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+	source := astar.Point{Col: r.Intn(cols), Row: r.Intn(rows)}
+	target := astar.Point{Col: r.Intn(cols), Row: r.Intn(rows)}
+
+	for i := 0; i < 400; i++ {
+		wall := astar.Point{Col: r.Intn(cols), Row: r.Intn(rows)}
+		a.FillTile(wall, -1)
+		termbox.SetCell(wall.Col, wall.Row, '#', termbox.ColorDefault, termbox.ColorDefault)
+	}
+
+	path := a.FindPath(astar.NewPointToPoint(), []astar.Point{source}, []astar.Point{target})
+
+	for path != nil {
+		path = path.Parent
+		termbox.SetCell(path.Col, path.Row, '.', termbox.ColorDefault, termbox.ColorDefault)
+		path = nil //path.Parent
+	}
+
+	termbox.SetCell(source.Col, source.Row, 's', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.SetCell(target.Col, target.Row, 't', termbox.ColorDefault, termbox.ColorDefault)
+	termbox.Flush()
+	termbox.PollEvent()
 }
 
 func main() {
-	err := termbox.Init()
+	f, err := os.OpenFile("demonshards.log", os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+	log.SetFlags(0)
+	log.SetPrefix("> ")
+
+	err = termbox.Init()
 	if err != nil {
 		panic(err)
 	}
 	defer termbox.Close()
 
-	running := true
+	log.Printf("Demonshards  %v", time.Now())
 
-	missionMap := NewMap("001")
+	//showIntro()
 
-	viking := NewViking('@', missionMap.Spawn.X, missionMap.Spawn.Y)
-	cursor := &Point{X: viking.Position.X, Y: viking.Position.Y}
-
-	for running {
-
-		missionMap.Draw()
-		viking.Draw()
-		termbox.SetCursor(cursor.X, cursor.Y)
-
-		termbox.Flush()
-
-		event := termbox.PollEvent()
-		if event.Type == termbox.EventKey {
-			if event.Key == termbox.KeyEsc || event.Ch == 'q' {
-				running = false
-			}
-
-			if event.Ch == 'j' {
-				cursor.Y += 1
-			}
-			if event.Ch == 'k' {
-				cursor.Y -= 1
-			}
-			if event.Ch == 'h' {
-				cursor.X -= 1
-			}
-			if event.Ch == 'l' {
-				cursor.X += 1
-			}
-
-			if event.Ch == 'x' {
-				if missionMap.FindPath(viking.Position, cursor) {
-					viking.Position.X = cursor.X
-					viking.Position.Y = cursor.Y
-				}
-			}
-		}
-	}
+	showGrid()
 }
