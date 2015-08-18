@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/nickdavies/go-astar/astar"
 	"github.com/nsf/termbox-go"
-	"log"
 	"math/rand"
 	"os"
 	"time"
@@ -55,24 +54,12 @@ func showGrid() {
 }
 
 func main() {
-	f, err := os.OpenFile("demonshards.log", os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
-	log.SetFlags(0)
-	log.SetPrefix("> ")
-
 	err = termbox.Init()
 	if err != nil {
 		panic(err)
 	}
 	defer termbox.Close()
 
-	log.Printf("Demonshards  %v", time.Now())
-
-	//showIntro()
-
+	showIntro()
 	showGrid()
 }
